@@ -1,6 +1,6 @@
 // --- INITIALIZE SUPABASE ---
-const SUPABASE_URL = "https://aqhhcduyjdwhttopbty.supabase.co"; 
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhcWhoY2R1eWpkd2h0dG9wYnR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5NDA0MTUsImV4cCI6MjA5NzUxNjQxNX0.37LMqYv-O58IWLz8sIivJ5PzdCd-jQHv0BsD0pF7sT4";
+const SUPABASE_URL = "https://aaqhhcduyjdwhttopbty.supabase.co"; 
+const SUPABASE_ANON_KEY = "re_Dm53gWvg_MaKt87ZvCzGhqoqYn1F5HT7V";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let conversationHistory = [];
