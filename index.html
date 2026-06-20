@@ -3,92 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YUVAN</title></title>
+    <title>Memrise made by yuvan</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
-    <div id="login-container" class="container">
-        <h2>Studio Login 🎙️</h2>
-        <p>Enter your email to receive a secure 6-digit OTP verification code:</p>
-        
-        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px;">
-            <input type="email" id="email-input" placeholder="Your Email Address">
-            <button id="send-otp-btn">Send Verification Code</button>
-            
-            <div id="otp-verification-box" class="hidden" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px; border-top: 1px solid #334155; padding-top: 15px;">
-                <p style="font-size: 0.9rem; color: #94a3b8; text-align: left; margin-bottom: 5px;">Enter the 6-digit code sent to your inbox:</p>
-                <input type="text" id="otp-input" placeholder="000000" maxlength="6" style="text-align: center; font-size: 1.5rem; letter-spacing: 5px;">
-                <button id="verify-otp-btn">Verify & Enter Studio</button>
-            </div>
+    <div id="login-container" class="card">
+        <h2>Studio Authentication</h2>
+        <p>Enter your email to request a secure 6-digit access code.</p>
+        <input type="email" id="email-input" placeholder="name@example.com">
+        <button id="send-otp-btn">Send Verification Code</button>
+
+        <div id="otp-verification-box" class="hidden">
+            <p>Enter the 6-digit code sent to your inbox:</p>
+            <input type="text" id="otp-input" placeholder="123456" maxlength="6">
+            <button id="verify-otp-btn">Authenticate & Enter Studio</button>
         </div>
     </div>
 
-    <div id="topic-container" class="container hidden">
-        <div class="profile-header-bar">
+    <div id="topic-container" class="card hidden">
+        <div class="user-profile-header">
             <div>
-                <strong id="display-username">Student</strong>
-                <div style="font-size: 0.85rem; color: #94a3b8;" id="user-email-label"></div>
+                <h3 id="display-username">Student</h3>
+                <span id="user-email-label">student@email.com</span>
             </div>
-            <div style="display: flex; gap: 15px; align-items: center;">
-                <span title="Daily Streak" style="font-weight: 700;">🔥 1 Day</span>
-                <span id="credit-badge" class="slang-word">🪙 Credits: 6</span>
+            <div class="badge-row">
+                <span class="status-badge">🔥 1 Day</span>
+                <span id="credit-badge" class="credit-badge">🪙 Credits: 6</span>
             </div>
         </div>
 
-        <div id="super-admin-panel" class="hidden" style="background: #1e3a8a; border: 1px solid #3b82f6; padding: 15px; border-radius: 16px; margin-bottom: 25px;">
-            <h4 style="margin: 0 0 10px 0; color: #60a5fa; text-align: left;">👑 Master Credit Regulator Vault</h4>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <input type="email" id="admin-target-email" placeholder="Recipient Email" style="flex: 2; padding: 10px;">
-                <input type="number" id="admin-credit-amount" placeholder="Amount" style="flex: 1; padding: 10px;">
-                <button id="admin-grant-btn" style="padding: 10px 15px; font-size: 0.9rem;">Grant</button>
+        <div id="super-admin-panel" class="admin-vault hidden">
+            <h4>👑 Master Credit Regulator Vault</h4>
+            <div class="admin-controls">
+                <input type="email" id="admin-target-email" placeholder="Recipient Email">
+                <input type="number" id="admin-credit-amount" placeholder="Amount" value="33">
+                <button id="admin-grant-btn">Grant</button>
             </div>
         </div>
 
         <h3>Choose an Interactive Scenario</h3>
-        <p style="font-size: 0.9rem; margin-bottom: 15px;">Each scenario entry costs 2 session credits.</p>
+        <p class="subtitle">Each scenario entry costs 2 session credits.</p>
         
-        <div class="topic-grid">
-            <button class="topic-btn" onclick="selectTopic('Daily Routine & Habits')">⏰ Daily Routine</button>
-            <button class="topic-btn" onclick="selectTopic('Social Media & Gaming')">🎮 Internet & Media</button>
-            <button class="topic-btn" onclick="selectTopic('Work, Hustle & Productivity')">💼 Work & Productivity</button>
-            <button class="topic-btn" onclick="selectTopic('Travel, Food & Shopping')">✈️ Travel & Lifestyle</button>
+        <div class="scenario-grid">
+            <button class="scenario-btn" onclick="selectTopic('Daily Routine')">⏰ Daily Routine</button>
+            <button class="scenario-btn" onclick="selectTopic('Internet & Media')">🎮 Internet & Media</button>
+            <button class="scenario-btn" onclick="selectTopic('Work & Productivity')">💼 Work & Productivity</button>
+            <button class="scenario-btn" onclick="selectTopic('Travel & Lifestyle')">✈️ Travel & Lifestyle</button>
+            <button class="scenario-btn" onclick="selectTopic('Entertainment & Movies')">🎬 Entertainment & Movies</button>
+            <button class="scenario-btn" onclick="selectTopic('Food & Dining')">🍔 Food & Dining</button>
+            <button class="scenario-btn" onclick="selectTopic('Health & Fitness')">💪 Health & Fitness</button>
+            <button class="scenario-btn" onclick="selectTopic('Shopping & Fashion')">🛍️ Shopping & Fashion</button>
         </div>
+
+        <button id="logout-btn" class="secondary-btn">Log Out</button>
     </div>
 
-    <div id="podcast-container" class="container hidden">
+    <div id="podcast-container" class="card hidden">
         <div class="podcast-header">
-            <div>
-                <h2 id="podcast-title">Live Slang Podcast</h2>
-                <small id="active-topic" style="color: #94a3b8; font-weight: 600;"></small>
-            </div>
-            <div id="timer">02:00:00</div>
+            <h3 id="active-topic">Scenario Context</h3>
+            <span id="timer">02:00:00</span>
         </div>
-        
-        <div id="chat-window"></div>
-
-        <div class="input-area">
-            <input type="text" id="user-input" placeholder="Type your reply here...">
-            <button id="send-btn">Talk</button>
+        <div id="chat-window" class="chat-box"></div>
+        <div class="chat-input-row">
+            <input type="text" id="user-input" placeholder="Type your response here...">
+            <button id="send-btn">Send</button>
         </div>
-
-        <button id="end-btn" class="danger-btn">End Podcast & Get Summary</button>
+        <button id="end-btn" class="danger-btn">End Session & Review</button>
     </div>
 
-    <div id="summary-container" class="container hidden">
-        <h2>Session Wrapped 🎧</h2>
-        <p>Great session! Here are the expressions you worked on today:</p>
+    <div id="summary-container" class="card hidden">
+        <h2>Scenario Practice Completed!</h2>
+        <p>Here are the expressions and slang idioms gathered from your session:</p>
         <ul id="slang-summary-list"></ul>
-        <button id="logout-btn">Log Out & Restart</button>
+        <button onclick="location.reload()" class="primary-btn">Return to Dashboard</button>
     </div>
 
-    <div id="admin-vault" class="hidden">
-        <h3>Master Key Settings</h3>
-        <input type="password" id="master-key-input" placeholder="Paste your Gemini API key here">
-        <button id="save-master-btn">Save Key</button>
+    <div id="admin-vault" class="card hidden">
+        <h3>System Configuration</h3>
+        <input type="password" id="master-key-input" placeholder="Paste Gemini Key Here">
+        <button id="save-master-btn">Save Master Key</button>
     </div>
 
+    <script src="script.js"></script>
 </body>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="script.js?v=15"></script>
 </html>
