@@ -8,14 +8,27 @@
 </head>
 <body>
 
-    <div id="topic-container" class="container">
-        <h2>Choose Your Practice Topic 🎧</h2>
-        <p>Select a scenario to practice natural idioms, vocabulary, and grammar correction:</p>
+    <div id="login-container" class="container">
+        <h2>Studio Login </h2>
+        <p>Sign in or create an account to start your podcast session:</p>
+        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+            <input type="email" id="email-input" placeholder="Your Email">
+            <input type="password" id="password-input" placeholder="Your Password">
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button id="login-btn" style="flex: 1;">Sign In</button>
+                <button id="signup-btn" style="flex: 1; background-color: #10b981;">Sign Up</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="topic-container" class="container hidden">
+        <h2>Welcome back! </h2>
+        <p>Choose your practice topic:</p>
         <div class="topic-grid">
-            <button class="topic-btn" onclick="selectTopic('Daily Routine & Habits')">⏰ Daily Routine</button>
-            <button class="topic-btn" onclick="selectTopic('Social Media & Gaming')">🎮 Internet & Media</button>
-            <button class="topic-btn" onclick="selectTopic('Work, Hustle & Productivity')">💼 Work & Productivity</button>
-            <button class="topic-btn" onclick="selectTopic('Travel, Food & Shopping')">✈️ Travel & Lifestyle</button>
+            <button class="topic-btn" onclick="selectTopic('Daily Routine & Habits')"> Daily Routine</button>
+            <button class="topic-btn" onclick="selectTopic('Social Media & Gaming')"> Internet & Media</button>
+            <button class="topic-btn" onclick="selectTopic('Work, Hustle & Productivity')"> Work & Productivity</button>
+            <button class="topic-btn" onclick="selectTopic('Travel, Food & Shopping')"> Travel & Lifestyle</button>
         </div>
     </div>
 
@@ -28,9 +41,7 @@
             <div id="timer">02:00:00</div>
         </div>
         
-        <div id="chat-window">
-            <p class="ai-bubble"><strong>Gemini:</strong> Hey there! Ready to jump into our topic? Tell me what's on your mind!</p>
-        </div>
+        <div id="chat-window"></div>
 
         <div class="input-area">
             <input type="text" id="user-input" placeholder="Type your reply here...">
@@ -44,7 +55,7 @@
         <h2>Session Wrapped 🎧</h2>
         <p>Great session! Here are the expressions you worked on today:</p>
         <ul id="slang-summary-list"></ul>
-        <button onclick="location.reload()">Start New Session</button>
+        <button id="logout-btn">Log Out & Restart</button>
     </div>
 
     <div id="admin-vault" class="hidden">
@@ -54,5 +65,6 @@
     </div>
 
 </body>
-<script src="script.js?v=9"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="script.js?v=13"></script>
 </html>
