@@ -1,47 +1,19 @@
 let conversationHistory = [];
 let vocabularyLearned = {}; 
 let timerInterval;
-let timeLeft = 2 * 60 * 60; // 2 hours in seconds
+let timeLeft = 2 * 60 * 60; 
+let selectedTopicContext = "";
 
-// 🎯 Custom System Instructions for slang conversions
-const SYSTEM_INSTRUCTION = `
-You are a relaxed, natural AI podcast co-host who helps users learn common modern idioms and slang. 
-
-CRITICAL PERSONALITY RULE: Speak in normal, standard, friendly English. Do NOT over-use slang like "vibing", "dope", "drop knowledge bombs", or "what's the buzz" in your regular conversation sentences. Sound like a normal, mature person chatting.
-
-CRITICAL FORMATTING RULE: Every single response you send MUST contain exactly one slang term or idiom wrapped in this exact format: [slang: WORD OR IDIOM | DEFINITION]. No exceptions.
-
-How to apply it:
-1. If the user says something plain, upgrade an idea: "You must be totally [slang: running on fumes | having very little energy left] right now."
-2. If the user just says "hi" or something short, include a natural idiom in your greeting: "Hey there! Good to see you. Let's [slang: kick things off | get started with something]—what's on your mind today?"
-
-Never use markdown code blocks or backticks (\`\`\`). Do not omit the brackets.
-`;
-const chatWindow = document.getElementById('chat-window');
-const userInput = document.getElementById('user-input');
-const sendBtn = document.getElementById('send-btn');
-const endBtn = document.getElementById('end-btn');
-const timerDisplay = document.getElementById('timer');
-const podcastContainer = document.getElementById('podcast-container');
-const summaryContainer = document.getElementById('summary-container');
-
-// Start countdown immediately
-startTimer();
-
-// 🤫 Secret Easter Egg Configuration: Ctrl + 0 + P
+//event listener i know i know
 let keysPressed = {};
 
 window.addEventListener('keydown', (e) => {
     const keyLower = e.key.toLowerCase();
     keysPressed[keyLower] = true;
 
-    // Activates if Ctrl is held, and either row-0, numpad-0, and P are triggered together
     if (e.ctrlKey && (keysPressed['0'] || keysPressed['num0']) && keysPressed['p']) {
         e.preventDefault(); 
-        
         document.getElementById('admin-vault').classList.toggle('hidden');
-        
-        // Clear immediately to prevent UI flickering loop
         keysPressed['0'] = false;
         keysPressed['num0'] = false;
         keysPressed['p'] = false;
@@ -62,6 +34,27 @@ document.getElementById('save-master-btn').addEventListener('click', () => {
     }
 });
 
+// Handle Topic Selection
+function selectTopic(topicName) {
+    selectedTopicContext = topicName;
+    document.getElementById('topic-container').classList.add('hidden');
+    document.getElementById('podcast-container').classList.remove('hidden');
+    document.getElementById('active-topic').textContent = `Topic: ${topicName}`;
+    
+    const chatWindow = document.getElementById('chat-window');
+    chatWindow.innerHTML = `<p class="ai-bubble"><strong>Gemini:</strong> Welcome! Let's chat about <strong>${topicName}</strong>. Tell me something about your day regarding this!</p>`;
+    
+    startTimer();
+}
+
+const chatWindow = document.getElementById('chat-window');
+const userInput = document.getElementById('user-input');
+const sendBtn = document.getElementById('send-btn');
+const endBtn = document.getElementById('end-btn');
+const timerDisplay = document.getElementById('timer');
+const podcastContainer = document.getElementById('podcast-container');
+const summaryContainer = document.getElementById('summary-container');
+
 async function handleSend() {
     const text = userInput.value.trim();
     if (!text) return;
@@ -72,28 +65,43 @@ async function handleSend() {
 
     const typingBubble = appendMessage("Gemini", "Thinking...", "ai-bubble");
 
-    // Automatically check visitor's browser memory for the saved master key
     const targetKey = atob(localStorage.getItem('shared_gemini_key') || "");
     if (!targetKey) {
         typingBubble.textContent = "System configuration missing. (Admin: Press Ctrl + 0 + P to unlock system console)";
         return;
     }
 
+    // 🎯 STRICT GRAMMAR EXAMINER + SLANG INSTRUCTION
+    const dynamicInstruction = `
+    You are a supportive, highly attentive AI language coach and podcast co-host. 
+    The current conversation focus topic is: ${selectedTopicContext}.
+
+    CRITICAL PERSONALITY RULE: Speak in standard, friendly English. Do NOT over-use slang in your regular conversational text sentences.
+
+    CRITICAL SLANG RULE: Every single response you generate MUST contain exactly one idiom or slang term wrapped exactly like this: [slang: WORD OR IDIOM | DEFINITION].
+
+    CRITICAL GRAMMAR RULE: You must act as a strict language tutor. Analyze the user's last message word-by-word. If there is ANY grammar mistake, capitalization slip, punctuation issue, awkward phrasing, spelling error, or tense discrepancy, you MUST prepend a grammar correction tag formatted exactly like this:
+    [grammar: Explain the mistake precisely | Show the exact corrected sentence structure]
+    
+    If they make multiple mistakes, group them neatly inside that single explanation container. If their grammar is completely flawless, skip the [grammar: ...] tag completely.
+
+    Never use markdown code blocks or backticks (\`\`\`).
+    `;
+
     try {
-        // 🚀 MODEL UPDATED TO GEMINI-2.5-FLASH FOR PRODUCTION
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${targetKey}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 contents: conversationHistory,
-                systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] }
+                systemInstruction: { parts: [{ text: dynamicInstruction }] }
             })
         });
 
         const data = await response.json();
         const rawReply = data.candidates[0].content.parts[0].text;
         
-        const cleanedReply = parseAndStoreSlang(rawReply);
+        const cleanedReply = parseAndStoreContent(rawReply);
         typingBubble.innerHTML = `<strong>Gemini:</strong> ${cleanedReply}`;
         conversationHistory.push({ role: "model", parts: [{ text: rawReply }] });
         chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -106,20 +114,34 @@ async function handleSend() {
 sendBtn.addEventListener('click', handleSend);
 userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
 
-function parseAndStoreSlang(text) {
-    const regex = /\[slang:\s*([^|]+)\s*\|\s*([^\]]+)\]/g;
-    let match;
+function parseAndStoreContent(text) {
     let newText = text;
-    while ((match = regex.exec(text)) !== null) {
-        const word = match[1].trim();
-        const definition = match[2].trim();
-        vocabularyLearned[word] = definition;
-        newText = newText.replace(match[0], `<span class="slang-word" onclick="alert('${word}: ${definition}')">${word}</span>`);
+
+    // 1. Parse Memrise-style Grammar Block if it exists
+    const grammarRegex = /\[grammar:\s*([^|]+)\s*\|\s*([^\]]+)\]/g;
+    let grammarMatch;
+    while ((grammarMatch = grammarRegex.exec(text)) !== null) {
+        const explanation = grammarMatch[1].trim();
+        const correction = grammarMatch[2].trim();
+        const tipHtml = `<span class="grammar-tip">💡 <strong>Grammar Tip:</strong> ${explanation} <br>✨ <em>Say: "${correction}"</em></span>`;
+        newText = newText.replace(grammarMatch[0], tipHtml);
     }
+
+    // 2. Parse Slang Block
+    const slangRegex = /\[slang:\s*([^|]+)\s*\|\s*([^\]]+)\]/g;
+    let slangMatch;
+    while ((slangMatch = slangRegex.exec(text)) !== null) {
+        const word = slangMatch[1].trim();
+        const definition = slangMatch[2].trim();
+        vocabularyLearned[word] = definition;
+        newText = newText.replace(slangMatch[0], `<span class="slang-word" title="${definition}" onclick="alert('${word}: ${definition}')">${word}</span>`);
+    }
+
     return newText;
 }
 
 function startTimer() {
+    if (timerInterval) clearInterval(timerInterval);
     timerInterval = setInterval(() => {
         timeLeft--;
         if (timeLeft <= 0) { clearInterval(timerInterval); endPodcast(); }
