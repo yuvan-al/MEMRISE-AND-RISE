@@ -18,65 +18,75 @@ const ADMIN_EMAIL = "yuvansood1234@gmail.com";
 const loginContainer = document.getElementById('login-container');
 const topicContainer = document.getElementById('topic-container');
 const emailInput = document.getElementById('email-input');
+const otpVerificationBox = document.getElementById('otp-verification-box');
 const otpInput = document.getElementById('otp-input');
-const otpBox = document.getElementById('otp-verification-box');
 const creditBadge = document.getElementById('credit-badge');
 const superAdminPanel = document.getElementById('super-admin-panel');
 
-// Keep user logged in on page refreshes
-window.addEventListener('DOMContentLoaded', async () => {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session && session.user) {
-        await syncUserProfile(session.user);
+// STEP 1: Request the 6-Digit Code via Resend SMTP
+document.getElementById('send-otp-btn').addEventListener('click', async () => {
+    const email = emailInput.value.trim().toLowerCase();
+    if (!email || !email.includes('@')) return alert("Please enter a valid email address.");
+
+    // Trigger Supabase's native OTP engine
+    const { error } = await supabaseClient.auth.signInWithOtp({
+        email: email,
+        options: {
+            shouldCreateUser: true // Automatically creates a user record in Supabase Auth if they are new
+        }
+    });
+
+    if (error) {
+        return alert("Failed to send code: " + error.message);
+    }
+
+    alert(`A secure verification code has been dispatched to ${email}! Check your inbox.`);
+    
+    // Reveal the 6-digit code entry box
+    if (otpVerificationBox) {
+        otpVerificationBox.classList.remove('hidden');
     }
 });
 
-// 1. Send Passwordless 6-Digit OTP to User's Email
-document.getElementById('send-otp-btn').addEventListener('click', async () => {
-    const email = emailInput.value.trim();
-    if (!email) return alert("Please enter your email address first.");
-
-    const { error } = await supabaseClient.auth.signInWithOtp({ email: email });
-    if (error) return alert("Error sending OTP code: " + error.message);
-
-    alert("A 6-digit verification code has been dispatched to your email inbox!");
-    otpBox.classList.remove('hidden');
-});
-
-// 2. Validate OTP Token and Fetch/Create Profile Row
+// STEP 2: Verify the Code and Sync to Database
 document.getElementById('verify-otp-btn').addEventListener('click', async () => {
-    const email = emailInput.value.trim();
+    const email = emailInput.value.trim().toLowerCase();
     const token = otpInput.value.trim();
-    if (!email || !token) return alert("Please fill in both fields.");
 
+    if (!email || !token) return alert("Please type your email and the code received.");
+
+    // Validate the code with Supabase Auth
     const { data, error } = await supabaseClient.auth.verifyOtp({
         email: email,
         token: token,
         type: 'email'
     });
 
-    if (error) return alert("Verification failed: " + error.message);
-    
+    if (error) {
+        return alert("Invalid or Expired Code: " + error.message);
+    }
+
+    // Success! sync their profile record with your credit tables
     if (data.user) {
-        await syncUserProfile(data.user);
+        await syncUserProfile(data.user.email);
     }
 });
 
-// Sync user metadata with Supabase database profile
-async function syncUserProfile(user) {
-    currentUserEmail = user.email;
-    currentUserName = user.email.split('@')[0];
+// Sync user metadata with your database profile row
+async function syncUserProfile(email) {
+    currentUserEmail = email;
+    currentUserName = email.split('@')[0];
 
-    // Read current user profile records based on unique email
+    // Check if user profile row already exists
     let { data: profile, error } = await supabaseClient
         .from('profiles')
         .select('*')
         .eq('email', currentUserEmail)
         .maybeSingle();
 
-    // If no profile entry exists yet, register them with 6 starting credits
     if (!profile) {
-        const initialCredits = (currentUserEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase()) ? 999999 : 6;
+        // New user! Set initial signup credits
+        const initialCredits = (currentUserEmail === ADMIN_EMAIL) ? 999999 : 6;
         
         const { data: newProfile, error: createError } = await supabaseClient
             .from('profiles')
@@ -89,14 +99,13 @@ async function syncUserProfile(user) {
 
     currentUserCredits = profile ? profile.credits : 6;
 
-    // Render User Stats Layout
     document.getElementById('display-username').textContent = currentUserName;
     document.getElementById('user-email-label').textContent = currentUserEmail;
     
     updateCreditDisplay();
 
-    // Toggle Admin Console view exclusively for your admin email
-    if (currentUserEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+    // Show Master Panel if admin logs in
+    if (currentUserEmail === ADMIN_EMAIL) {
         superAdminPanel.classList.remove('hidden');
     }
 
@@ -105,21 +114,20 @@ async function syncUserProfile(user) {
 }
 
 function updateCreditDisplay() {
-    if (currentUserEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+    if (currentUserEmail === ADMIN_EMAIL) {
         creditBadge.textContent = "🪙 Credits: Infinite ∞";
     } else {
         creditBadge.textContent = `🪙 Credits: ${currentUserCredits}`;
     }
 }
 
-// 3. Admin Credit Transfer System
+// Admin Credit Transfer System
 document.getElementById('admin-grant-btn').addEventListener('click', async () => {
-    const targetEmail = document.getElementById('admin-target-email').value.trim();
+    const targetEmail = document.getElementById('admin-target-email').value.trim().toLowerCase();
     const grantAmount = parseInt(document.getElementById('admin-credit-amount').value.trim());
 
     if (!targetEmail || isNaN(grantAmount)) return alert("Please fill out a valid recipient email and number amount.");
 
-    // Locate target user's current profile row
     const { data: targetProfile, error: fetchError } = await supabaseClient
         .from('profiles')
         .select('*')
@@ -142,15 +150,14 @@ document.getElementById('admin-grant-btn').addEventListener('click', async () =>
     document.getElementById('admin-credit-amount').value = "";
 });
 
-// 4. Scenario Activation & Credit Deduction
+// Scenario Activation & Credit Deduction
 async function selectTopic(topicName) {
-    const isAdmin = (currentUserEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase());
+    const isAdmin = (currentUserEmail === ADMIN_EMAIL);
 
     if (!isAdmin && currentUserCredits < 2) {
         return alert("Access Denied! Each studio scenario requires 2 session credits.");
     }
 
-    // Process payment if user is not the master admin account
     if (!isAdmin) {
         currentUserCredits -= 2;
         updateCreditDisplay();
