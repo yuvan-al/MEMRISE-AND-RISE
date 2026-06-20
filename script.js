@@ -1,5 +1,5 @@
 // --- INITIALIZE SUPABASE ---
-const SUPABASE_URL = "https://aaqhhcduyjdwhttopbty.supabase.co"; 
+const SUPABASE_URL = "https://aqhhcduyjdwhttopbty.supabase.co"; 
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhcWhoY2R1eWpkd2h0dG9wYnR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5NDA0MTUsImV4cCI6MjA5NzUxNjQxNX0.37LMqYv-O58IWLz8sIivJ5PzdCd-jQHv0BsD0pF7sT4";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -13,7 +13,7 @@ let currentUserEmail = "";
 let currentUserCredits = 6;
 const ADMIN_EMAIL = "yuvansood1234@gmail.com";
 
-// SPEECH ENGINE CONNECTIVITY INTERFACE
+// SPEECH AUDIO CONNECTIONS
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null;
 let isRecording = false;
@@ -36,7 +36,7 @@ const talkBtn = document.getElementById('talk-btn');
 const voiceStatusLabel = document.getElementById('voice-status-label');
 const chatWindow = document.getElementById('chat-window');
 
-// STEP 1: Request OTP Access Link
+// STEP 1: Request OTP Security Link
 document.getElementById('send-otp-btn').addEventListener('click', async () => {
     const email = emailInput.value.trim().toLowerCase();
     if (!email || !email.includes('@')) return alert("Please enter a valid email address.");
@@ -46,7 +46,7 @@ document.getElementById('send-otp-btn').addEventListener('click', async () => {
     if (otpVerificationBox) otpVerificationBox.classList.remove('hidden');
 });
 
-// STEP 2: Verify Log-in Key
+// STEP 2: Authenticate OTP Code
 document.getElementById('verify-otp-btn').addEventListener('click', async () => {
     const email = emailInput.value.trim().toLowerCase();
     const token = otpInput.value.trim();
@@ -103,12 +103,14 @@ async function selectTopic(topicName) {
     document.getElementById('active-topic').textContent = `Voice Context: ${topicName}`;
     
     const welcomeMessage = `Hello ${currentUserName}! Let's practice conversational skills on "${topicName}". Tap the mic button whenever you are ready to talk!`;
-    chatWindow.innerHTML = `<p class="ai-bubble"><strong>Gemini:</strong> ${welcomeMessage}</p>`;
+    
+    // ON-SCREEN BRANDING: Displays "Adam" as the conversational entity label
+    chatWindow.innerHTML = `<p class="ai-bubble"><strong>Adam:</strong> ${welcomeMessage}</p>`;
     speakText(welcomeMessage);
     startTimer();
 }
 
-// SPEECH EVENT ENGINE CONTROL HOOKS
+// CAPTURING MICROPHONE STREAMS
 if (recognition) {
     recognition.onstart = () => {
         isRecording = true;
@@ -144,12 +146,13 @@ function resetVoiceInterface() {
     voiceStatusLabel.textContent = "Microphone Idle";
 }
 
-// MAIN CONVERSATION ENGINE PIPELINE
+// PROCESSING CORE SYSTEM FLOW
 async function processingConversationFlow(text) {
     appendMessage(currentUserName, text, "user-bubble");
     conversationHistory.push({ role: "user", parts: [{ text: text }] });
 
-    const typingBubble = appendMessage("Gemini", "Analyzing vocal feedback...", "ai-bubble");
+    // ON-SCREEN BRANDING: Updates loader to display "Adam"
+    const typingBubble = appendMessage("Adam", "Analyzing vocal feedback...", "ai-bubble");
     const targetKey = atob(localStorage.getItem('shared_gemini_key') || "");
     if (!targetKey) {
         typingBubble.textContent = "Configuration Key Offline. (Ctrl + 0 + P)";
@@ -170,7 +173,8 @@ async function processingConversationFlow(text) {
         const data = await response.json();
         const rawReply = data.candidates[0].content.parts[0].text;
         
-        typingBubble.innerHTML = `<strong>Gemini:</strong> ${parseAndStoreContent(rawReply)}`;
+        // ON-SCREEN BRANDING: Renders outputs to the workspace under "Adam"
+        typingBubble.innerHTML = `<strong>Adam:</strong> ${parseAndStoreContent(rawReply)}`;
         conversationHistory.push({ role: "model", parts: [{ text: rawReply }] });
         
         let voiceCleanText = rawReply.replace(/\[grammar:[^\]]+\]/g, "").replace(/\[slang:\s*([^|]+)\s*\|\s*[^\]]+\]/g, "$1");
@@ -180,17 +184,25 @@ async function processingConversationFlow(text) {
     }
 }
 
+// INLINE STRUCTURAL PARSING AND DISPLAY INJECTIONS
 function parseAndStoreContent(text) {
     let cleanOutput = text;
+    
+    // Parse Grammar Tags
     const grammarRegex = /\[grammar:\s*([^|]+)\s*\|\s*([^\]]+)\]/g;
     let match;
     while ((match = grammarRegex.exec(text)) !== null) {
         cleanOutput = cleanOutput.replace(match[0], `<span class="grammar-tip">💡 <strong>Correction:</strong> ${match[1]} <br>✨ <em>Say: "${match[2]}"</em></span>`);
     }
+    
+    // Parse Slang Tags and Append Meaning Context Visually
     const slangRegex = /\[slang:\s*([^|]+)\s*\|\s*([^\]]+)\]/g;
     while ((match = slangRegex.exec(text)) !== null) {
-        vocabularyLearned[match[1].trim()] = match[2].trim();
-        cleanOutput = cleanOutput.replace(match[0], `<span class="slang-word">${match[1]}</span>`);
+        const expression = match[1].trim();
+        const definition = match[2].trim();
+        
+        vocabularyLearned[expression] = definition;
+        cleanOutput = cleanOutput.replace(match[0], `<span class="slang-word" title="${definition}">${expression}</span> <i style="color: var(--text-muted); font-size: 0.9rem;">(${definition})</i>`);
     }
     return cleanOutput;
 }
